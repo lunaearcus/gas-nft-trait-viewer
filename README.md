@@ -13,7 +13,7 @@ Google Apps Script で動作する「NFT Trait Viewer」は、指定したウォ
 
 1. **Google スプレッドシートを開く**
 2. メニューから「拡張機能」→「Apps Script」を選択し、`index.js` の内容を貼り付けて保存
-3. スクリプトプロパティに `ALCHEMY_API_KEY` を追加し、値にAlchemyのAPIエンドポイントURL（例: `https://eth-mainnet.g.alchemy.com/v2/xxxxxx`）を設定
+3. スクリプトプロパティに `ALCHEMY_API_KEY` を追加し、値にAlchemyのAPI KEYを設定
 4. スプレッドシートを再読み込み
 
 ## appsscript.json の権限設定について
@@ -41,7 +41,7 @@ Google Apps Script で動作する「NFT Trait Viewer」は、指定したウォ
 
 1. スプレッドシートを開くと「NFT Viewer」メニューが追加されます
 2. 「1. Setup Config Sheet」をクリックし、設定用シートを作成
-3. `B1` にウォレットアドレス、`B2` にコントラクトアドレスを入力
+3. `B1` に API エンドポイント、`B2` にウォレットアドレス、`B3` にコントラクトアドレスを入力
 4. `A5` 以降に表示したいTrait名を1つずつ入力
 5. 「2. Fetch NFT Data」をクリックすると、NFTデータが新しいシートに出力されます
 
