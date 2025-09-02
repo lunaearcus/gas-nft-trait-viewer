@@ -23,6 +23,16 @@ class NftTraitViewer {
     ].join('\n'));
   }
 
+  static fetchNftDataWithRefreshedCache() {
+    (new NftTraitViewer({
+      ss: SpreadsheetApp.getActiveSpreadsheet(),
+      ui: SpreadsheetApp.getUi(),
+      apiKey: PropertiesService.getScriptProperties().getProperty('ALCHEMY_API_KEY'),
+      useCache: false,
+      refresh: true
+    })).build();
+  }
+
   static fetchNftDataWithCache() {
     (new NftTraitViewer({
       ss: SpreadsheetApp.getActiveSpreadsheet(),
@@ -53,8 +63,8 @@ class NftTraitViewer {
     throw new Error('Column number exceeds the supported range (up to 18272 for 3-letter columns).');
   }
 
-  constructor({ ss, ui, apiKey, useCache }) {
-    Object.assign(this, { ss, ui, apiKey, useCache });
+  constructor({ ss, ui, apiKey, useCache, refresh }) {
+    Object.assign(this, { ss, ui, apiKey, useCache, refresh });
     try { this.init(); } catch (error) { this.ui.alert('Error: ' + error.message); }
   }
 
@@ -120,7 +130,13 @@ class NftTraitViewer {
     this.ui.alert('Fetching all NFTs... This may take a moment and involve multiple API calls.');
     let allOwnedNfts = [];
     let pageKey;
-    const url = `${this.apiEndpoint}/getNFTs?owner=${this.ownerAddress}&contractAddresses[]=${this.contractAddress}&withMetadata=true`;
+    const url = [
+      `${this.apiEndpoint}/getNFTs`,
+      `?owner=${this.ownerAddress}`,
+      `&contractAddresses[]=${this.contractAddress}`,
+      `&withMetadata=true`,
+      (this.refresh ? `&refreshCache=true` : '')
+    ].join('');
     do {
       const options = { 'method': 'get', 'contentType': 'application/json', 'muteHttpExceptions': true };
       const response = UrlFetchApp.fetch(`${url}${pageKey ? `&pageKey=${pageKey}` : ''}`, options);
@@ -228,5 +244,6 @@ function onOpen() {
     .addSeparator()
     .addItem('2. Fetch NFT Data (use cache)', 'NftTraitViewer.fetchNftDataWithCache')
     .addItem('3. Fetch NFT Data (no cache)', 'NftTraitViewer.fetchNftDataWithoutCache')
+    .addItem('4. Fetch NFT Data (refreshed cache)', 'NftTraitViewer.fetchNftDataWithRefreshedCache')
     .addToUi();
 }
