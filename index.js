@@ -320,7 +320,7 @@ class MultiChainNftTraitViewer {
 
   static normalizeImageUrl(imageUrl) {
     if (imageUrl && imageUrl.startsWith('ipfs://')) {
-      return imageUrl.replace('ipfs://', 'https://ipfs.io/ipfs/');
+      return imageUrl.replace('ipfs://', 'https://gateway.pinata.cloud/ipfs/');
     }
     return imageUrl || '';
   }
