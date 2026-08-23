@@ -50,15 +50,34 @@ class MultiChainNftTraitViewer {
   }
 
   static fetchNftDataWithRefreshedCache() {
-    new MultiChainNftTraitViewer({ ss: SpreadsheetApp.getActiveSpreadsheet(), ui: SpreadsheetApp.getUi(), useCache: false, refresh: true }).build();
+    new MultiChainNftTraitViewer({ ss: SpreadsheetApp.getActiveSpreadsheet(), useCache: false, refresh: true }).build();
   }
 
   static fetchNftDataWithCache() {
-    new MultiChainNftTraitViewer({ ss: SpreadsheetApp.getActiveSpreadsheet(), ui: SpreadsheetApp.getUi(), useCache: true }).build();
+    new MultiChainNftTraitViewer({ ss: SpreadsheetApp.getActiveSpreadsheet(), useCache: true }).build();
   }
 
   static fetchNftDataWithoutCache() {
-    new MultiChainNftTraitViewer({ ss: SpreadsheetApp.getActiveSpreadsheet(), ui: SpreadsheetApp.getUi(), useCache: false }).build();
+    new MultiChainNftTraitViewer({ ss: SpreadsheetApp.getActiveSpreadsheet(), useCache: false }).build();
+  }
+
+  static continueXrplFetch() {
+    MultiChainNftTraitViewer.clearContinuationTriggers();
+    new MultiChainNftTraitViewer({ ss: SpreadsheetApp.getActiveSpreadsheet(), useCache: false }).build();
+  }
+
+  static scheduleContinuation() {
+    const handler = 'continueXrplFetch';
+    const alreadyScheduled = ScriptApp.getProjectTriggers().some(trigger => trigger.getHandlerFunction() === handler);
+    if (!alreadyScheduled) {
+      ScriptApp.newTrigger(handler).timeBased().after(60 * 1000).create();
+    }
+  }
+
+  static clearContinuationTriggers() {
+    ScriptApp.getProjectTriggers()
+      .filter(trigger => trigger.getHandlerFunction() === 'continueXrplFetch')
+      .forEach(trigger => ScriptApp.deleteTrigger(trigger));
   }
 
   static columnToLetter(column) {
@@ -143,7 +162,7 @@ class MultiChainNftTraitViewer {
       if (chunks.length === 0) return [];
       return chunks.flat();
     } catch (e) {
-      this.ui.alert('Cache data is corrupted. Fetching from API.');
+      Logger.log('Cache data is corrupted. Fetching from API.');
       return null;
     }
   }
@@ -298,13 +317,16 @@ class MultiChainNftTraitViewer {
     // 3. 現在の進捗状態をキャッシュシートへ保存
     this.writeToCache(parsedNfts);
 
-    // 中断された場合はユーザーへ通知
+    // 中断された場合は次回実行を予約
     if (isInterrupted) {
       const completedCount = parsedNfts.filter(n => n.status === 'done').length;
-      throw new Error(`【タイムアウト回避のため一時停止】\n現在 ${completedCount} / ${parsedNfts.length} 件の取得が完了しました。\nもう一度「Fetch NFT Data (use cache)」を実行すると、続きから再開します。`);
+      MultiChainNftTraitViewer.scheduleContinuation();
+      Logger.log(`XRPL fetch paused: ${completedCount} / ${parsedNfts.length} completed. A continuation trigger was scheduled.`);
+      return null;
     }
 
     if (parsedNfts.length === 0) throw new Error('No NFTs found for the given criteria.');
+    MultiChainNftTraitViewer.clearContinuationTriggers();
     return parsedNfts;
   }
 
@@ -445,17 +467,16 @@ class MultiChainNftTraitViewer {
     try {
       const cached = this.getUsableCache();
       if (cached !== null) {
-        this.ui.alert('Using cached data.');
         if (cached.length === 0) throw new Error('No NFTs found in cache.');
         this.renderSheet(cached);
         return;
       }
 
-      this.ui.alert(`Fetching NFTs via ${this.network}... This may take a moment.`);
       const allOwnedNfts = (this.network === 'XRPL') ? this.fetchXrplFromApi() : this.fetchEvmFromApi();
+      if (allOwnedNfts === null) return;
       this.renderSheet(allOwnedNfts);
 
-    } catch (error) { this.ui.alert('Error: ' + error.message); }
+    } catch (error) { Logger.log('Error: ' + error.message); }
   }
 
   renderSheet(allOwnedNfts) {
@@ -488,7 +509,7 @@ class MultiChainNftTraitViewer {
     dataSheet.getDataRange().createFilter();
 
     dataSheet.activate();
-    this.ui.alert(`Success! ${groupedNfts.size} groups written to '${dataSheetName}' sheet.`);
+    Logger.log(`Success! ${groupedNfts.size} groups written to '${dataSheetName}' sheet.`);
   }
 }
 
@@ -499,6 +520,7 @@ function setupConfigSheet() { MultiChainNftTraitViewer.setupConfigSheet(); }
 function fetchNftDataWithCache() { MultiChainNftTraitViewer.fetchNftDataWithCache(); }
 function fetchNftDataWithoutCache() { MultiChainNftTraitViewer.fetchNftDataWithoutCache(); }
 function fetchNftDataWithRefreshedCache() { MultiChainNftTraitViewer.fetchNftDataWithRefreshedCache(); }
+function continueXrplFetch() { MultiChainNftTraitViewer.continueXrplFetch(); }
 
 function onOpen() {
   SpreadsheetApp.getUi()

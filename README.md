@@ -54,6 +54,8 @@ EVMネットワークではAlchemy API、XRPLネットワークではBithomp API
 5. `A6` 以降に表示したいTrait名を1つずつ入力
 6. 「2. Fetch NFT Data」をクリックすると、NFTデータが新しいシートに出力されます
 
+XRPLでNFT数が多く、Apps Scriptの実行時間上限に達した場合は、取得済みデータをCacheシートへ保存して約1分後に自動再開します。完了すると継続用トリガーは削除されます。取得状況やエラーはApps Scriptの実行ログで確認できます。
+
 ## 注意事項
 
 - Alchemy APIの利用にはAPIキーが必要です
@@ -61,6 +63,7 @@ EVMネットワークではAlchemy API、XRPLネットワークではBithomp API
 - Bithomp APIのFREEプランでは1回の取得件数が 100 件までに制限されます。より多くのNFTを取得したい場合は、有料プランへのアップグレードが必要です
 - 取得できるNFTはEVMのERC-721/1155などAlchemyが対応しているもの、またはXRPLのBithomp APIが対応しているものに限ります
 - 画像やリンクはOpenSeaやBithomp側の仕様変更等により表示できない場合があります
+- 自動継続には、初回実行時に時間主導トリガーの作成権限を承認する必要があります
 
 ## AI 利用
 
